@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Activity Cost Lab</title>
-  <meta name="description" content="A no-build activity-based costing simulation for managerial accounting classes.">
+  <meta name="description" content="A no-build activity-based costing game for managerial accounting classes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,12 +14,12 @@
   <main class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">Managerial accounting simulation</p>
+        <p class="eyebrow">Managerial accounting game</p>
         <h1>Activity Cost Lab</h1>
       </div>
       <div class="topbar-actions">
         <span class="student-chip" id="student-chip">Guest analyst</span>
-        <button class="icon-button" id="reset-case" type="button" title="Reset case data" aria-label="Reset case data">
+        <button class="icon-button" id="reset-case" type="button" title="Reset game" aria-label="Reset game">
           <span aria-hidden="true">&#8635;</span>
         </button>
       </div>
@@ -28,13 +28,13 @@
     <section class="screen screen-start active" id="screen-start" aria-labelledby="start-title">
       <div class="intro-copy">
         <p class="eyebrow">TrailMix Co. case</p>
-        <h2 id="start-title">Find the hidden cost distortion in a two-product factory.</h2>
-        <p class="intro-text">Use plantwide costing, rebuild the overhead model with activity cost pools, then make a pricing decision from the ABC numbers.</p>
+        <h2 id="start-title">Play detective inside a two-product factory.</h2>
+        <p class="intro-text">Earn points by spotting cost distortion, matching activity drivers, and making the pricing call that protects profit.</p>
         <form class="start-form" id="start-form">
           <label for="student-name">Student or team name</label>
           <div class="start-row">
             <input id="student-name" type="text" maxlength="28" placeholder="Enter name" autocomplete="off">
-            <button class="primary-button" type="submit">Start lab</button>
+            <button class="primary-button" type="submit">Start game</button>
           </div>
         </form>
       </div>
@@ -69,233 +69,63 @@
           </svg>
         </div>
         <div class="rule-grid">
-          <div>
-            <span>Objective</span>
-            <strong>Diagnose undercosting</strong>
-          </div>
-          <div>
-            <span>Products</span>
-            <strong>Standard + Custom</strong>
-          </div>
-          <div>
-            <span>Overhead</span>
-            <strong id="start-overhead">$252,000</strong>
-          </div>
-          <div>
-            <span>Class mode</span>
-            <strong>Team leaderboard</strong>
-          </div>
+          <div><span>Objective</span><strong>Find distortion</strong></div>
+          <div><span>Game loop</span><strong>5 scored levels</strong></div>
+          <div><span>Overhead</span><strong id="start-overhead">$252,000</strong></div>
+          <div><span>Mechanics</span><strong>Feedback + streaks</strong></div>
         </div>
       </div>
     </section>
 
-    <section class="screen screen-lab" id="screen-lab" aria-label="Activity Cost Lab workspace">
-      <nav class="step-nav" aria-label="Lab steps">
-        <button class="step-button active" type="button" data-stage="plantwide">
-          <span>01</span>
-          Plantwide
-        </button>
-        <button class="step-button" type="button" data-stage="abc">
-          <span>02</span>
-          Activity map
-        </button>
-        <button class="step-button" type="button" data-stage="pricing">
-          <span>03</span>
-          Pricing
-        </button>
-        <button class="step-button" type="button" data-stage="debrief">
-          <span>04</span>
-          Debrief
-        </button>
-      </nav>
+    <section class="screen screen-lab" id="screen-lab" aria-label="Activity Cost Lab game">
+      <aside class="game-panel" aria-label="Game status">
+        <div class="hud-grid">
+          <div class="hud-card score"><span>Score</span><strong id="hud-score">0</strong></div>
+          <div class="hud-card"><span>Streak</span><strong id="hud-streak">0x</strong></div>
+          <div class="hud-card"><span>Level</span><strong id="hud-level">1/5</strong></div>
+        </div>
+        <div class="progress-shell" aria-label="Game progress"><span id="progress-fill"></span></div>
+        <nav class="level-track" id="level-track" aria-label="Game levels"></nav>
+      </aside>
 
       <section class="workspace">
-        <section class="stage active" id="stage-plantwide" aria-labelledby="plantwide-title">
-          <div class="stage-header">
-            <div>
-              <p class="eyebrow">Step 01</p>
-              <h2 id="plantwide-title">Start with a plantwide overhead rate.</h2>
-            </div>
-            <label class="select-label" for="base-select">
-              Allocation base
-              <select id="base-select">
-                <option value="directLaborHours">Direct labor hours</option>
-                <option value="machineHours">Machine hours</option>
-              </select>
-            </label>
+        <section class="game-stage" aria-labelledby="challenge-title">
+          <div class="coach-card">
+            <div class="coach-avatar" aria-hidden="true">CFO</div>
+            <p id="coach-text"></p>
           </div>
 
-          <div class="metric-grid" id="plantwide-metrics"></div>
-
-          <div class="table-wrap">
-            <table class="data-table" id="traditional-table">
-              <caption>Traditional product costs</caption>
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Price</th>
-                  <th>Direct cost/unit</th>
-                  <th>Plantwide OH/unit</th>
-                  <th>Unit cost</th>
-                  <th>Margin</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <div class="question-panel">
-            <div>
-              <p class="eyebrow">Before ABC</p>
-              <h3>Which product do you suspect consumes more batch-level work per unit?</h3>
-            </div>
-            <div class="choice-row" role="group" aria-label="Initial suspicion">
-              <button class="choice-button" type="button" data-choice="standard" data-question="suspicion">Standard Kit</button>
-              <button class="choice-button" type="button" data-choice="custom" data-question="suspicion">Custom Kit</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="stage" id="stage-abc" aria-labelledby="abc-title">
-          <div class="stage-header">
-            <div>
-              <p class="eyebrow">Step 02</p>
-              <h2 id="abc-title">Trace overhead through activities.</h2>
-            </div>
-            <button class="secondary-button" id="reset-assumptions" type="button">Reset assumptions</button>
-          </div>
-
-          <div class="activity-layout">
-            <div class="activity-map">
-              <div class="map-column products">
-                <span>Products</span>
-                <strong>Standard Kit</strong>
-                <strong>Custom Kit</strong>
-              </div>
-              <div class="map-arrows" aria-hidden="true">
-                <span></span>
-                <span></span>
-              </div>
-              <div class="map-column pools">
-                <span>Activity cost pools</span>
-                <strong>Machine processing</strong>
-                <strong>Setups</strong>
-                <strong>Material moves</strong>
-                <strong>Quality inspections</strong>
-              </div>
-              <div class="map-arrows" aria-hidden="true">
-                <span></span>
-                <span></span>
-              </div>
-              <div class="map-column answer">
-                <span>Output</span>
-                <strong>ABC unit cost</strong>
-                <strong>Cost distortion</strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table class="data-table editable-table" id="activity-table">
-              <caption>Editable activity cost pools</caption>
-              <thead>
-                <tr>
-                  <th>Activity</th>
-                  <th>Driver</th>
-                  <th>Pool cost</th>
-                  <th>Standard usage</th>
-                  <th>Custom usage</th>
-                  <th>Rate</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <div class="table-wrap">
-            <table class="data-table" id="abc-table">
-              <caption>ABC product costs</caption>
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>ABC OH/unit</th>
-                  <th>ABC unit cost</th>
-                  <th>ABC margin</th>
-                  <th>Plantwide vs ABC</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <div class="question-panel">
-            <div>
-              <p class="eyebrow">Diagnosis</p>
-              <h3>Which product was undercosted by the plantwide method?</h3>
-              <p id="diagnosis-feedback" class="feedback-text"></p>
-            </div>
-            <div class="choice-row" role="group" aria-label="Undercosted diagnosis">
-              <button class="choice-button" type="button" data-choice="standard" data-question="diagnosis">Standard Kit</button>
-              <button class="choice-button" type="button" data-choice="custom" data-question="diagnosis">Custom Kit</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="stage" id="stage-pricing" aria-labelledby="pricing-title">
-          <div class="stage-header">
-            <div>
-              <p class="eyebrow">Step 03</p>
-              <h2 id="pricing-title">Make a pricing decision from the ABC costs.</h2>
-            </div>
-            <button class="secondary-button" id="run-round" type="button">Run pricing round</button>
-          </div>
-
-          <div class="pricing-grid" id="pricing-grid"></div>
-
-          <div class="decision-summary" id="decision-summary">
-            <div>
-              <span>Projected operating profit</span>
-              <strong id="projected-profit">$0</strong>
-            </div>
-            <div>
-              <span>Change from current prices</span>
-              <strong id="profit-change">$0</strong>
-            </div>
-            <div>
-              <span>Lab score</span>
-              <strong id="score-preview">0</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="stage" id="stage-debrief" aria-labelledby="debrief-title">
-          <div class="stage-header">
-            <div>
-              <p class="eyebrow">Step 04</p>
-              <h2 id="debrief-title">Debrief the cost story.</h2>
-            </div>
-            <button class="secondary-button" id="save-score" type="button">Save score</button>
-          </div>
-
-          <div class="debrief-grid">
-            <article class="insight-card" id="primary-insight"></article>
-            <article class="insight-card" id="pricing-insight"></article>
-            <article class="insight-card" id="discussion-card">
-              <p class="eyebrow">Class prompt</p>
-              <h3>What changed after switching from volume-based costing to activity-based costing?</h3>
-              <p>Compare product volume, activity usage, and margin. The important lesson is not that ABC always raises prices, but that it makes the cost of complexity visible.</p>
-            </article>
-          </div>
-
-          <div class="leaderboard-panel">
-            <div class="leaderboard-head">
+          <div class="challenge-card">
+            <div class="challenge-head">
               <div>
-                <p class="eyebrow">Local leaderboard</p>
-                <h3>Team scores</h3>
+                <p class="eyebrow" id="challenge-kicker">Level 1</p>
+                <h2 id="challenge-title">Plantwide Shortcut</h2>
               </div>
-              <button class="secondary-button danger" id="clear-board" type="button">Clear</button>
+              <span class="reward-chip">Points on the line</span>
             </div>
-            <div id="leaderboard-list"></div>
+            <p class="challenge-prompt" id="challenge-prompt"></p>
+            <div id="challenge-body"></div>
+          </div>
+
+          <div class="feedback-panel" id="feedback-panel"></div>
+          <div class="challenge-controls" id="challenge-controls"></div>
+          <div class="scorecard" id="scorecard" aria-label="Current accounting clues"></div>
+          <div class="cost-cards" id="cost-cards"></div>
+
+          <div class="results-zone" id="results-zone">
+            <div class="leaderboard-panel">
+              <div class="leaderboard-head">
+                <div>
+                  <p class="eyebrow">Local leaderboard</p>
+                  <h3>Team scores</h3>
+                </div>
+                <div class="btn-row">
+                  <button class="secondary-button" id="save-score" type="button">Save score</button>
+                  <button class="secondary-button danger" id="clear-board" type="button">Clear</button>
+                </div>
+              </div>
+              <div id="leaderboard-list"></div>
+            </div>
           </div>
         </section>
       </section>

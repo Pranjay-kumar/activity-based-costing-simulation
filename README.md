@@ -1,6 +1,6 @@
 # Activity Cost Lab
 
-A static activity-based costing simulation for a managerial accounting class. Students compare plantwide overhead allocation with activity-based costing, diagnose cost distortion, make a pricing decision, and save a local leaderboard score.
+A static activity-based costing game for a managerial accounting class. Students move through scored levels, get immediate correct/incorrect feedback, compare plantwide overhead allocation with activity-based costing, diagnose cost distortion, match activity drivers, make a pricing decision, and save a local leaderboard score.
 
 ## Tech Stack
 

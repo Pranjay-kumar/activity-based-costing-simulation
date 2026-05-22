@@ -346,7 +346,7 @@ button {
 
 .screen-lab.active {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -391,6 +391,427 @@ button {
 .workspace {
   min-height: 640px;
   padding: 30px;
+}
+
+.game-panel {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.hud-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.hud-card.score {
+  background: var(--ink);
+  color: #fff;
+}
+
+.hud-card span,
+.scorecard span,
+.cost-card span,
+.match-row span {
+  display: block;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.hud-card.score span {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.hud-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.progress-shell {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-alt);
+}
+
+.progress-shell span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--blue));
+  transition: width 0.25s ease;
+}
+
+.level-track {
+  display: grid;
+  gap: 8px;
+}
+
+.level-token {
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px 12px;
+  color: var(--muted);
+  text-align: left;
+}
+
+.level-token span {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.level-token strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+}
+
+.level-token.active {
+  border-color: rgba(47, 104, 184, 0.45);
+  background: var(--blue-soft);
+}
+
+.level-token.complete {
+  border-color: rgba(22, 129, 109, 0.46);
+  background: var(--teal-soft);
+}
+
+.level-token:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.game-stage {
+  display: grid;
+  gap: 14px;
+}
+
+.coach-card,
+.challenge-card,
+.feedback-panel,
+.scorecard,
+.cost-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.coach-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(90deg, var(--teal-soft), #fff);
+}
+
+.coach-avatar {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+.coach-card p {
+  margin: 0;
+  color: #31535a;
+  line-height: 1.55;
+}
+
+.challenge-card {
+  padding: 22px;
+}
+
+.challenge-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.challenge-head h2 {
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.reward-chip {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--amber-soft);
+  color: var(--amber);
+  padding: 0 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.challenge-prompt {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.answer-card {
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  padding: 16px;
+  text-align: left;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.answer-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(47, 104, 184, 0.45);
+}
+
+.answer-card strong {
+  display: block;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.answer-card span {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.answer-card.correct,
+.match-row.correct {
+  border-color: rgba(22, 129, 109, 0.55);
+  background: var(--teal-soft);
+}
+
+.answer-card.incorrect,
+.match-row.incorrect {
+  border-color: rgba(185, 75, 75, 0.55);
+  background: var(--coral-soft);
+}
+
+.match-board {
+  display: grid;
+  gap: 10px;
+}
+
+.match-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(260px, 1.3fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  padding: 14px;
+}
+
+.match-row strong {
+  display: block;
+  margin-top: 5px;
+}
+
+.match-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.match-options button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.feedback-panel {
+  padding: 18px;
+  background: var(--blue-soft);
+}
+
+.feedback-panel.correct {
+  background: var(--teal-soft);
+  border-color: rgba(22, 129, 109, 0.48);
+}
+
+.feedback-panel.incorrect {
+  background: var(--coral-soft);
+  border-color: rgba(185, 75, 75, 0.48);
+}
+
+.feedback-panel h3 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.feedback-panel p {
+  margin: 9px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.lesson-line {
+  color: var(--ink) !important;
+  font-weight: 700;
+}
+
+.challenge-controls,
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.challenge-controls .primary-button,
+.challenge-controls .secondary-button {
+  min-width: 130px;
+}
+
+.scorecard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.scorecard div {
+  min-height: 86px;
+  padding: 14px;
+  border-right: 1px solid var(--line);
+}
+
+.scorecard div:last-child {
+  border-right: 0;
+}
+
+.scorecard strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+.cost-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cost-card {
+  overflow: hidden;
+  padding: 16px;
+}
+
+.cost-card.standard {
+  background: linear-gradient(180deg, var(--teal-soft), #fff 45%);
+}
+
+.cost-card.custom {
+  background: linear-gradient(180deg, var(--blue-soft), #fff 45%);
+}
+
+.cost-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.cost-card h3 {
+  margin: 4px 0 0;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.cost-card-head > strong {
+  font-size: 28px;
+}
+
+.cost-meter {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  margin: 16px 0;
+}
+
+.cost-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--blue));
+}
+
+.cost-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.cost-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.cost-card dt {
+  color: var(--muted);
+}
+
+.cost-card dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.results-zone {
+  padding-top: 4px;
 }
 
 .stage {
@@ -875,8 +1296,10 @@ input[type="range"] {
 
 @media (max-width: 640px) {
   .app-shell {
-    width: calc(100vw - 20px);
-    max-width: 1180px;
+    width: 100%;
+    max-width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
     padding-top: 14px;
   }
 
@@ -887,8 +1310,8 @@ input[type="range"] {
 
   .screen-start.active > *,
   .screen-lab.active > * {
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
+    width: 100%;
+    max-width: 100%;
   }
 
   .case-board,
@@ -944,15 +1367,15 @@ input[type="range"] {
   .intro-text,
   .start-form,
   .start-row {
-    width: calc(100vw - 70px);
-    max-width: calc(100vw - 70px);
+    width: 100%;
+    max-width: 100%;
   }
 
   .start-row input,
   .start-row .primary-button {
     display: block;
-    width: calc(100vw - 70px);
-    max-width: calc(100vw - 70px);
+    width: 100%;
+    max-width: 100%;
     justify-self: start;
   }
 
@@ -961,8 +1384,8 @@ input[type="range"] {
   }
 
   .factory-visual svg {
-    width: calc(100vw - 70px);
-    max-width: calc(100vw - 70px);
+    width: 100%;
+    max-width: 100%;
   }
 
   .topbar h1,

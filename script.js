@@ -1,6 +1,6 @@
 const STORAGE_KEY = "activity-cost-lab-leaderboard";
 
-const initialCase = {
+const caseData = {
   products: {
     standard: {
       label: "Standard Kit",
@@ -29,18 +29,104 @@ const initialCase = {
   ]
 };
 
+const levels = [
+  {
+    id: "plantwide",
+    label: "Level 1",
+    title: "Plantwide Shortcut",
+    short: "Plantwide",
+    coach: "A plantwide rate spreads one big overhead bucket using one volume measure. It is fast, but it can hide complexity.",
+    prompt: "The controller starts with direct labor hours. What is the plantwide overhead rate?",
+    type: "choice",
+    reward: 120,
+    correct: "33.60",
+    choices: [
+      { id: "16.80", label: "$16.80 per DLH", note: "That would only allocate half of the overhead." },
+      { id: "33.60", label: "$33.60 per DLH", note: "$252,000 overhead divided by 7,500 direct labor hours." },
+      { id: "62.22", label: "$62.22 per DLH", note: "That uses machine hours, not direct labor hours." }
+    ],
+    lesson: "Plantwide rate = total overhead / total allocation base. Here, $252,000 / 7,500 DLH = $33.60 per DLH."
+  },
+  {
+    id: "distortion",
+    label: "Level 2",
+    title: "Spot The Distortion",
+    short: "Distortion",
+    coach: "When a low-volume product needs lots of setups, moves, or inspections, volume-based costing often makes it look cheaper than it really is.",
+    prompt: "Under plantwide costing, which product is most likely being undercosted?",
+    type: "choice",
+    reward: 140,
+    correct: "custom",
+    choices: [
+      { id: "standard", label: "Standard Kit", note: "Standard is high volume and uses fewer batch activities per unit." },
+      { id: "custom", label: "Custom Kit", note: "Custom is lower volume but uses many more setups, moves, and inspections." }
+    ],
+    lesson: "Custom Kit uses 80% of setups, 78% of moves, and 80% of inspections while making only 20% of units."
+  },
+  {
+    id: "drivers",
+    label: "Level 3",
+    title: "Build The Activity Map",
+    short: "Drivers",
+    coach: "ABC improves the model by splitting overhead into activity pools and assigning each pool with its own driver.",
+    prompt: "Match each activity pool to the driver that best explains its cost.",
+    type: "match",
+    reward: 180,
+    lesson: "A good driver is the thing that causes the activity cost. Setups are driven by setup runs, not units produced."
+  },
+  {
+    id: "abc",
+    label: "Level 4",
+    title: "Reveal True Unit Cost",
+    short: "ABC Math",
+    coach: "Now the activity pools are traced to each product. The custom product absorbs more overhead per unit because it consumes more batch-level work.",
+    prompt: "What is the ABC overhead per unit for Custom Kit?",
+    type: "choice",
+    reward: 180,
+    correct: "51.75",
+    choices: [
+      { id: "8.06", label: "$8.06", note: "That is Standard Kit's ABC overhead per unit." },
+      { id: "30.24", label: "$30.24", note: "That is Custom Kit's plantwide overhead, before ABC traces batch work." },
+      { id: "51.75", label: "$51.75", note: "$155,250 of activity overhead divided by 3,000 Custom Kits." }
+    ],
+    lesson: "Custom Kit's ABC unit cost is $93.75: $42 direct cost plus $51.75 overhead."
+  },
+  {
+    id: "pricing",
+    label: "Level 5",
+    title: "Final Pricing Decision",
+    short: "Pricing",
+    coach: "Your final move is a managerial decision. ABC does not make the decision for you, but it gives a cleaner view of product economics.",
+    prompt: "The sales team wants to discount Custom Kit to win orders. What should you recommend?",
+    type: "choice",
+    reward: 220,
+    correct: "raise",
+    choices: [
+      { id: "discount", label: "Discount Custom Kit to $75", note: "That price is far below the ABC unit cost of $93.75." },
+      { id: "hold", label: "Keep price at $89", note: "This stays profitable, but it ignores how thin the ABC margin is." },
+      { id: "raise", label: "Raise or redesign Custom Kit", note: "Correct. Either price for complexity or reduce the activities it consumes." }
+    ],
+    lesson: "ABC shows Custom Kit is already below full cost at $89. A discount would deepen the loss."
+  }
+];
+
+const driverMatches = [
+  { activity: "Machine processing", driver: "machine hours", wrong: "setup runs" },
+  { activity: "Production setups", driver: "setup runs", wrong: "units produced" },
+  { activity: "Material handling", driver: "material moves", wrong: "sales dollars" },
+  { activity: "Quality inspections", driver: "inspections", wrong: "direct labor hours" }
+];
+
 const state = {
   student: "Guest analyst",
-  activeStage: "plantwide",
-  allocationBase: "directLaborHours",
-  suspicion: null,
-  diagnosis: null,
-  scoreSaved: false,
-  pricingTargets: {
-    standard: 30,
-    custom: 24
-  },
-  caseData: cloneCase(initialCase)
+  levelIndex: 0,
+  score: 0,
+  streak: 0,
+  attempts: {},
+  answers: {},
+  matchAnswers: {},
+  completed: new Set(),
+  showLesson: false
 };
 
 const productKeys = ["standard", "custom"];
@@ -48,10 +134,7 @@ const productKeys = ["standard", "custom"];
 const startForm = document.getElementById("start-form");
 const studentName = document.getElementById("student-name");
 const studentChip = document.getElementById("student-chip");
-const baseSelect = document.getElementById("base-select");
 const resetCaseButton = document.getElementById("reset-case");
-const resetAssumptionsButton = document.getElementById("reset-assumptions");
-const runRoundButton = document.getElementById("run-round");
 const saveScoreButton = document.getElementById("save-score");
 const clearBoardButton = document.getElementById("clear-board");
 
@@ -64,69 +147,29 @@ startForm.addEventListener("submit", (event) => {
   studentChip.textContent = state.student;
   document.getElementById("screen-start").classList.remove("active");
   document.getElementById("screen-lab").classList.add("active");
-  switchStage("plantwide");
-});
-
-baseSelect.addEventListener("change", () => {
-  state.allocationBase = baseSelect.value;
   renderAll();
 });
 
-resetCaseButton.addEventListener("click", resetCase);
-resetAssumptionsButton.addEventListener("click", resetCase);
-
-runRoundButton.addEventListener("click", () => {
-  switchStage("debrief");
-});
-
+resetCaseButton.addEventListener("click", resetGame);
 saveScoreButton.addEventListener("click", () => {
   saveScore();
   renderLeaderboard();
 });
-
 clearBoardButton.addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   renderLeaderboard();
 });
 
-document.querySelectorAll(".step-button").forEach((button) => {
-  button.addEventListener("click", () => switchStage(button.dataset.stage));
-});
-
-document.querySelectorAll(".choice-button").forEach((button) => {
-  button.addEventListener("click", () => {
-    const question = button.dataset.question;
-    state[question] = button.dataset.choice;
-    if (question === "diagnosis") {
-      state.scoreSaved = false;
-    }
-    renderAll();
-  });
-});
-
-function cloneCase(source) {
-  return JSON.parse(JSON.stringify(source));
-}
-
-function resetCase() {
-  state.caseData = cloneCase(initialCase);
-  state.diagnosis = null;
-  state.suspicion = null;
-  state.scoreSaved = false;
-  state.pricingTargets = { standard: 30, custom: 24 };
+function resetGame() {
+  state.levelIndex = 0;
+  state.score = 0;
+  state.streak = 0;
+  state.attempts = {};
+  state.answers = {};
+  state.matchAnswers = {};
+  state.completed = new Set();
+  state.showLesson = false;
   renderAll();
-}
-
-function switchStage(stage) {
-  state.activeStage = stage;
-  document.querySelectorAll(".stage").forEach((section) => {
-    section.classList.toggle("active", section.id === `stage-${stage}`);
-  });
-  document.querySelectorAll(".step-button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.stage === stage);
-  });
-  renderAll();
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function fmtMoney(value, digits = 0) {
@@ -143,286 +186,331 @@ function fmtPercent(value) {
 }
 
 function totalOverhead() {
-  return state.caseData.activities.reduce((sum, activity) => sum + Number(activity.cost || 0), 0);
+  return caseData.activities.reduce((sum, activity) => sum + activity.cost, 0);
 }
 
 function directCost(product) {
-  return Number(product.directMaterials) + Number(product.directLabor);
+  return product.directMaterials + product.directLabor;
 }
 
 function plantwideRate() {
-  const totalBase = productKeys.reduce((sum, key) => {
-    return sum + Number(state.caseData.products[key][state.allocationBase] || 0);
-  }, 0);
-  return totalBase === 0 ? 0 : totalOverhead() / totalBase;
+  const totalDirectLaborHours = productKeys.reduce((sum, key) => sum + caseData.products[key].directLaborHours, 0);
+  return totalOverhead() / totalDirectLaborHours;
 }
 
 function traditionalFor(key) {
-  const product = state.caseData.products[key];
-  const basePerUnit = Number(product[state.allocationBase] || 0) / Number(product.units || 1);
-  const overheadPerUnit = plantwideRate() * basePerUnit;
+  const product = caseData.products[key];
+  const overheadPerUnit = plantwideRate() * (product.directLaborHours / product.units);
   const unitCost = directCost(product) + overheadPerUnit;
-  const unitProfit = Number(product.price) - unitCost;
+  const unitProfit = product.price - unitCost;
   return {
     overheadPerUnit,
     unitCost,
     unitProfit,
-    margin: Number(product.price) === 0 ? 0 : unitProfit / Number(product.price)
+    margin: unitProfit / product.price
   };
 }
 
 function activityRate(activity) {
-  const totalUsage = Number(activity.standard || 0) + Number(activity.custom || 0);
-  return totalUsage === 0 ? 0 : Number(activity.cost || 0) / totalUsage;
+  return activity.cost / (activity.standard + activity.custom);
 }
 
 function abcFor(key) {
-  const product = state.caseData.products[key];
-  const allocated = state.caseData.activities.reduce((sum, activity) => {
-    return sum + activityRate(activity) * Number(activity[key] || 0);
+  const product = caseData.products[key];
+  const allocated = caseData.activities.reduce((sum, activity) => {
+    return sum + activityRate(activity) * activity[key];
   }, 0);
-  const overheadPerUnit = allocated / Number(product.units || 1);
+  const overheadPerUnit = allocated / product.units;
   const unitCost = directCost(product) + overheadPerUnit;
-  const unitProfit = Number(product.price) - unitCost;
+  const unitProfit = product.price - unitCost;
   return {
     allocated,
     overheadPerUnit,
     unitCost,
     unitProfit,
-    margin: Number(product.price) === 0 ? 0 : unitProfit / Number(product.price)
+    margin: unitProfit / product.price
   };
 }
 
-function currentProfit() {
-  return productKeys.reduce((sum, key) => {
-    const product = state.caseData.products[key];
-    return sum + abcFor(key).unitProfit * Number(product.units || 0);
-  }, 0);
+function currentLevel() {
+  return levels[state.levelIndex];
 }
 
-function recommendedPrice(key) {
-  const target = state.pricingTargets[key] / 100;
-  const unitCost = abcFor(key).unitCost;
-  return target >= 0.95 ? unitCost : unitCost / (1 - target);
+function isLevelComplete(level = currentLevel()) {
+  return state.completed.has(level.id);
 }
 
-function projectedProfit() {
-  return productKeys.reduce((sum, key) => {
-    const product = state.caseData.products[key];
-    return sum + (recommendedPrice(key) - abcFor(key).unitCost) * Number(product.units || 0);
-  }, 0);
+function levelAttempts(level = currentLevel()) {
+  return state.attempts[level.id] || 0;
 }
 
-function undercostedProduct() {
-  const distortions = productKeys.map((key) => {
-    return {
-      key,
-      distortion: abcFor(key).overheadPerUnit - traditionalFor(key).overheadPerUnit
-    };
-  });
-  distortions.sort((a, b) => b.distortion - a.distortion);
-  return distortions[0].key;
+function awardPoints(level) {
+  const attempts = levelAttempts(level);
+  const penalty = Math.max(0, attempts - 1) * 35;
+  const streakBonus = state.streak >= 2 ? 25 : 0;
+  const earned = Math.max(40, level.reward - penalty + streakBonus);
+  state.score += earned;
+  return earned;
 }
 
-function labScore() {
-  const correctDiagnosis = state.diagnosis === undercostedProduct();
-  const diagnosisPoints = correctDiagnosis ? 40 : 0;
-  const gain = projectedProfit() - currentProfit();
-  const pricingPoints = Math.max(0, Math.min(60, Math.round((gain / 90000) * 60)));
-  return diagnosisPoints + pricingPoints;
+function answerChoice(levelId, choiceId) {
+  const level = levels.find((item) => item.id === levelId);
+  if (!level || isLevelComplete(level)) {
+    return;
+  }
+  state.attempts[level.id] = levelAttempts(level) + 1;
+  state.answers[level.id] = choiceId;
+  const correct = choiceId === level.correct;
+  if (correct) {
+    state.streak += 1;
+    const earned = awardPoints(level);
+    state.completed.add(level.id);
+    state.showLesson = true;
+    state.answers[`${level.id}-earned`] = earned;
+  } else {
+    state.streak = 0;
+    state.showLesson = true;
+  }
+  renderAll();
+}
+
+function answerMatch(activity, driver) {
+  const level = levels.find((item) => item.id === "drivers");
+  if (isLevelComplete(level)) {
+    return;
+  }
+  state.matchAnswers[activity] = driver;
+  const correctDriver = driverMatches.find((match) => match.activity === activity).driver;
+  if (driver !== correctDriver) {
+    state.attempts[level.id] = levelAttempts(level) + 1;
+    state.streak = 0;
+  }
+  const solved = driverMatches.every((match) => state.matchAnswers[match.activity] === match.driver);
+  if (solved) {
+    state.streak += 1;
+    const earned = awardPoints(level);
+    state.completed.add(level.id);
+    state.answers[`${level.id}-earned`] = earned;
+    state.showLesson = true;
+  } else {
+    state.showLesson = true;
+  }
+  renderAll();
+}
+
+function nextLevel() {
+  if (state.levelIndex < levels.length - 1) {
+    state.levelIndex += 1;
+    state.showLesson = false;
+  }
+  renderAll();
+}
+
+function prevLevel() {
+  if (state.levelIndex > 0) {
+    state.levelIndex -= 1;
+    state.showLesson = false;
+  }
+  renderAll();
 }
 
 function renderAll() {
   document.getElementById("start-overhead").textContent = fmtMoney(totalOverhead());
-  renderPlantwideMetrics();
-  renderTraditionalTable();
-  renderActivityTable();
-  renderAbcTable();
-  renderChoiceButtons();
-  renderDiagnosisFeedback();
-  renderPricing();
-  renderDebrief();
+  renderHud();
+  renderLevelNav();
+  renderChallenge();
+  renderScorecard();
+  renderCostCards();
   renderLeaderboard();
 }
 
-function renderPlantwideMetrics() {
-  const rate = plantwideRate();
-  const totalUnits = productKeys.reduce((sum, key) => sum + Number(state.caseData.products[key].units || 0), 0);
-  const baseLabel = state.allocationBase === "directLaborHours" ? "DLH" : "machine hr";
-  const strongest = productKeys
-    .map((key) => ({ key, margin: traditionalFor(key).margin }))
-    .sort((a, b) => b.margin - a.margin)[0];
-
-  document.getElementById("plantwide-metrics").innerHTML = [
-    metricMarkup("Total overhead", fmtMoney(totalOverhead()), ""),
-    metricMarkup("Plantwide rate", `${fmtMoney(rate, 2)} / ${baseLabel}`, ""),
-    metricMarkup("Units in case", totalUnits.toLocaleString(), ""),
-    metricMarkup("Best margin so far", state.caseData.products[strongest.key].label, "good")
-  ].join("");
+function renderHud() {
+  document.getElementById("hud-score").textContent = state.score.toLocaleString();
+  document.getElementById("hud-streak").textContent = `${state.streak}x`;
+  document.getElementById("hud-level").textContent = `${state.levelIndex + 1}/${levels.length}`;
+  document.getElementById("progress-fill").style.width = `${(state.completed.size / levels.length) * 100}%`;
 }
 
-function metricMarkup(label, value, tone) {
-  return `<div class="metric ${tone}"><span>${label}</span><strong>${value}</strong></div>`;
-}
-
-function renderTraditionalTable() {
-  const tbody = document.querySelector("#traditional-table tbody");
-  tbody.innerHTML = productKeys.map((key) => {
-    const product = state.caseData.products[key];
-    const result = traditionalFor(key);
+function renderLevelNav() {
+  const nav = document.getElementById("level-track");
+  nav.innerHTML = levels.map((level, index) => {
+    const locked = index > state.completed.size;
+    const active = index === state.levelIndex;
+    const complete = state.completed.has(level.id);
     return `
-      <tr>
-        <td><strong>${product.label}</strong><br><span class="muted">${product.units.toLocaleString()} units</span></td>
-        <td>${fmtMoney(product.price)}</td>
-        <td>${fmtMoney(directCost(product))}</td>
-        <td>${fmtMoney(result.overheadPerUnit, 2)}</td>
-        <td>${fmtMoney(result.unitCost, 2)}</td>
-        <td class="${result.margin >= 0 ? "positive" : "negative"}">${fmtPercent(result.margin)}</td>
-      </tr>
+      <button class="level-token ${active ? "active" : ""} ${complete ? "complete" : ""}" type="button" data-level-index="${index}" ${locked ? "disabled" : ""}>
+        <span>${level.label}</span>
+        <strong>${level.short}</strong>
+      </button>
     `;
   }).join("");
-}
-
-function renderActivityTable() {
-  const tbody = document.querySelector("#activity-table tbody");
-  tbody.innerHTML = state.caseData.activities.map((activity, index) => {
-    return `
-      <tr>
-        <td><strong>${activity.name}</strong></td>
-        <td>${activity.driver}</td>
-        <td><input class="number-input compact activity-input" type="number" min="0" step="1000" value="${activity.cost}" data-index="${index}" data-field="cost" aria-label="${activity.name} pool cost"></td>
-        <td><input class="number-input compact activity-input" type="number" min="0" step="1" value="${activity.standard}" data-index="${index}" data-field="standard" aria-label="${activity.name} standard usage"></td>
-        <td><input class="number-input compact activity-input" type="number" min="0" step="1" value="${activity.custom}" data-index="${index}" data-field="custom" aria-label="${activity.name} custom usage"></td>
-        <td>${fmtMoney(activityRate(activity), 2)}</td>
-      </tr>
-    `;
-  }).join("");
-
-  document.querySelectorAll(".activity-input").forEach((input) => {
-    input.addEventListener("change", () => {
-      const activity = state.caseData.activities[Number(input.dataset.index)];
-      activity[input.dataset.field] = Number(input.value || 0);
-      state.scoreSaved = false;
+  nav.querySelectorAll("[data-level-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.levelIndex = Number(button.dataset.levelIndex);
+      state.showLesson = false;
       renderAll();
     });
   });
 }
 
-function renderAbcTable() {
-  const tbody = document.querySelector("#abc-table tbody");
-  tbody.innerHTML = productKeys.map((key) => {
-    const product = state.caseData.products[key];
-    const abc = abcFor(key);
-    const traditional = traditionalFor(key);
-    const distortion = traditional.overheadPerUnit - abc.overheadPerUnit;
-    const aligned = Math.abs(distortion) < 0.005;
-    const tagClass = aligned ? "" : distortion > 0 ? "alert" : "good";
-    const tagText = aligned ? "Aligned with ABC" : distortion > 0 ? "Overcosted by plantwide" : "Undercosted by plantwide";
-    return `
-      <tr>
-        <td><strong>${product.label}</strong><br><span class="muted">${product.units.toLocaleString()} units</span></td>
-        <td>${fmtMoney(abc.overheadPerUnit, 2)}</td>
-        <td>${fmtMoney(abc.unitCost, 2)}</td>
-        <td class="${abc.margin >= 0 ? "positive" : "negative"}">${fmtPercent(abc.margin)}</td>
-        <td><span class="tag ${tagClass}">${tagText}: ${fmtMoney(Math.abs(distortion), 2)}/unit</span></td>
-      </tr>
-    `;
-  }).join("");
+function renderChallenge() {
+  const level = currentLevel();
+  document.getElementById("coach-text").textContent = level.coach;
+  document.getElementById("challenge-kicker").textContent = level.label;
+  document.getElementById("challenge-title").textContent = level.title;
+  document.getElementById("challenge-prompt").textContent = level.prompt;
+
+  const body = document.getElementById("challenge-body");
+  body.innerHTML = level.type === "match" ? renderMatchLevel(level) : renderChoiceLevel(level);
+  body.querySelectorAll("[data-choice]").forEach((button) => {
+    button.addEventListener("click", () => answerChoice(level.id, button.dataset.choice));
+  });
+  body.querySelectorAll("[data-match-driver]").forEach((button) => {
+    button.addEventListener("click", () => answerMatch(button.dataset.matchActivity, button.dataset.matchDriver));
+  });
+
+  renderFeedback(level);
+  renderControls(level);
 }
 
-function renderChoiceButtons() {
-  document.querySelectorAll(".choice-button").forEach((button) => {
-    const question = button.dataset.question;
-    const selected = state[question] === button.dataset.choice;
-    button.classList.toggle("selected", selected);
-    button.classList.remove("correct", "incorrect");
-    if (question === "diagnosis" && selected) {
-      button.classList.add(button.dataset.choice === undercostedProduct() ? "correct" : "incorrect");
+function renderChoiceLevel(level) {
+  const selected = state.answers[level.id];
+  const complete = isLevelComplete(level);
+  return `
+    <div class="answer-grid">
+      ${level.choices.map((choice) => {
+        const picked = selected === choice.id;
+        const correct = choice.id === level.correct;
+        const tone = picked ? correct ? "correct" : "incorrect" : "";
+        return `
+          <button class="answer-card ${tone}" type="button" data-choice="${choice.id}" ${complete ? "disabled" : ""}>
+            <strong>${choice.label}</strong>
+            <span>${picked ? choice.note : "Pick this answer"}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderMatchLevel(level) {
+  const complete = isLevelComplete(level);
+  return `
+    <div class="match-board">
+      ${driverMatches.map((match) => {
+        const selected = state.matchAnswers[match.activity];
+        const answered = Boolean(selected);
+        const correct = selected === match.driver;
+        return `
+          <article class="match-row ${answered ? correct ? "correct" : "incorrect" : ""}">
+            <div>
+              <span>Activity pool</span>
+              <strong>${match.activity}</strong>
+            </div>
+            <div class="match-options">
+              ${[match.driver, match.wrong].sort().map((driver) => `
+                <button type="button" data-match-activity="${match.activity}" data-match-driver="${driver}" ${complete ? "disabled" : ""}>
+                  ${driver}
+                </button>
+              `).join("")}
+            </div>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderFeedback(level) {
+  const panel = document.getElementById("feedback-panel");
+  const complete = isLevelComplete(level);
+  const attempts = levelAttempts(level);
+  if (!state.showLesson && attempts === 0) {
+    panel.className = "feedback-panel";
+    panel.innerHTML = `
+      <p class="eyebrow">How to think</p>
+      <h3>Make a call, then the game explains the accounting.</h3>
+      <p>You can miss once and keep playing. Points fall a little after each attempt, so accuracy matters.</p>
+    `;
+    return;
+  }
+
+  const selected = state.answers[level.id];
+  let correct = complete;
+  let note = level.lesson;
+  if (level.type === "choice" && selected) {
+    const choice = level.choices.find((item) => item.id === selected);
+    correct = selected === level.correct;
+    note = choice.note;
+  }
+
+  panel.className = `feedback-panel ${correct ? "correct" : "incorrect"}`;
+  panel.innerHTML = `
+    <p class="eyebrow">${correct ? "Correct" : "Try again"}</p>
+    <h3>${correct ? `You earned ${state.answers[`${level.id}-earned`] || 0} points.` : "That answer does not fit the cost story yet."}</h3>
+    <p>${note}</p>
+    ${correct && note !== level.lesson ? `<p class="lesson-line">${level.lesson}</p>` : ""}
+  `;
+}
+
+function renderControls(level) {
+  const controls = document.getElementById("challenge-controls");
+  const complete = isLevelComplete(level);
+  const isLast = state.levelIndex === levels.length - 1;
+  controls.innerHTML = `
+    <button class="secondary-button" type="button" id="btn-prev" ${state.levelIndex === 0 ? "disabled" : ""}>Back</button>
+    <button class="primary-button" type="button" id="btn-next" ${complete ? "" : "disabled"}>${isLast ? "See results" : "Next level"}</button>
+  `;
+  document.getElementById("btn-prev").addEventListener("click", prevLevel);
+  document.getElementById("btn-next").addEventListener("click", () => {
+    if (isLast) {
+      document.getElementById("results-zone").scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
     }
+    nextLevel();
   });
 }
 
-function renderDiagnosisFeedback() {
-  const feedback = document.getElementById("diagnosis-feedback");
-  const correct = undercostedProduct();
-  if (!state.diagnosis) {
-    feedback.textContent = "Use the ABC table to compare plantwide overhead per unit against activity-based overhead per unit.";
-    return;
-  }
-  const chosen = state.caseData.products[state.diagnosis].label;
-  if (state.diagnosis === correct) {
-    feedback.textContent = `${chosen} is undercosted because its activity usage is heavier than the plantwide rate shows.`;
-  } else {
-    feedback.textContent = `${chosen} is not the undercosted product in this case. Look for the product where ABC overhead per unit is higher than plantwide overhead per unit.`;
-  }
+function renderScorecard() {
+  const diagnosis = state.completed.has("distortion") ? "Custom Kit undercosted" : "Locked";
+  const abc = abcFor("custom");
+  const old = traditionalFor("custom");
+  document.getElementById("scorecard").innerHTML = `
+    <div><span>Diagnosis</span><strong>${diagnosis}</strong></div>
+    <div><span>Custom plantwide OH</span><strong>${fmtMoney(old.overheadPerUnit, 2)}</strong></div>
+    <div><span>Custom ABC OH</span><strong>${state.completed.has("abc") ? fmtMoney(abc.overheadPerUnit, 2) : "???"}</strong></div>
+    <div><span>Custom ABC margin</span><strong>${state.completed.has("pricing") ? fmtPercent(abc.margin) : "???"}</strong></div>
+  `;
 }
 
-function renderPricing() {
-  document.getElementById("pricing-grid").innerHTML = productKeys.map((key) => {
-    const product = state.caseData.products[key];
+function renderCostCards() {
+  const container = document.getElementById("cost-cards");
+  container.innerHTML = productKeys.map((key) => {
+    const product = caseData.products[key];
+    const traditional = traditionalFor(key);
     const abc = abcFor(key);
-    const target = state.pricingTargets[key];
-    const nextPrice = recommendedPrice(key);
+    const reveal = state.completed.has("abc");
+    const distortion = traditional.overheadPerUnit - abc.overheadPerUnit;
     return `
-      <article class="pricing-card">
-        <h3>${product.label}</h3>
-        <div class="product-card">
-          <div><span>Current price</span><strong>${fmtMoney(product.price)}</strong></div>
-          <div><span>ABC unit cost</span><strong>${fmtMoney(abc.unitCost, 2)}</strong></div>
-          <div><span>Current ABC margin</span><strong class="${abc.margin >= 0 ? "positive" : "negative"}">${fmtPercent(abc.margin)}</strong></div>
-          <div><span>Annual volume</span><strong>${product.units.toLocaleString()}</strong></div>
-        </div>
-        <div class="slider-block">
-          <div class="slider-row">
-            <label for="target-${key}">Target margin</label>
-            <strong>${target}%</strong>
+      <article class="cost-card ${key}">
+        <div class="cost-card-head">
+          <div>
+            <span>${product.units.toLocaleString()} units</span>
+            <h3>${product.label}</h3>
           </div>
-          <input id="target-${key}" type="range" min="5" max="45" step="1" value="${target}" data-price-key="${key}">
+          <strong>${fmtMoney(product.price)}</strong>
         </div>
-        <div class="price-line">
-          <span class="muted">Recommended ABC price</span>
-          <strong>${fmtMoney(nextPrice, 2)}</strong>
+        <div class="cost-meter">
+          <span style="width:${Math.min(100, traditional.margin * 120)}%"></span>
         </div>
+        <dl>
+          <div><dt>Plantwide unit cost</dt><dd>${fmtMoney(traditional.unitCost, 2)}</dd></div>
+          <div><dt>ABC unit cost</dt><dd>${reveal ? fmtMoney(abc.unitCost, 2) : "Locked"}</dd></div>
+          <div><dt>Distortion</dt><dd class="${distortion > 0 ? "negative" : "positive"}">${reveal ? fmtMoney(Math.abs(distortion), 2) : "Locked"}</dd></div>
+        </dl>
       </article>
     `;
   }).join("");
-
-  document.querySelectorAll("[data-price-key]").forEach((input) => {
-    input.addEventListener("change", () => {
-      state.pricingTargets[input.dataset.priceKey] = Number(input.value);
-      state.scoreSaved = false;
-      renderAll();
-    });
-  });
-
-  const profit = projectedProfit();
-  const change = profit - currentProfit();
-  document.getElementById("projected-profit").textContent = fmtMoney(profit);
-  document.getElementById("projected-profit").className = profit >= 0 ? "positive" : "negative";
-  document.getElementById("profit-change").textContent = fmtMoney(change);
-  document.getElementById("profit-change").className = change >= 0 ? "positive" : "negative";
-  document.getElementById("score-preview").textContent = String(labScore());
-}
-
-function renderDebrief() {
-  const correct = undercostedProduct();
-  const overcosted = productKeys.find((key) => key !== correct);
-  const correctProduct = state.caseData.products[correct];
-  const overProduct = state.caseData.products[overcosted];
-  const customAbc = abcFor("custom");
-  const standardAbc = abcFor("standard");
-
-  document.getElementById("primary-insight").innerHTML = `
-    <p class="eyebrow">Cost diagnosis</p>
-    <h3>${correctProduct.label} was undercosted.</h3>
-    <p>${correctProduct.label} absorbs more activity cost per unit than the plantwide rate assigned. ${overProduct.label} was carrying some of that overhead burden.</p>
-  `;
-
-  document.getElementById("pricing-insight").innerHTML = `
-    <p class="eyebrow">Pricing implication</p>
-    <h3>${customAbc.margin < standardAbc.margin ? "Complexity is expensive." : "Volume is carrying the case."}</h3>
-    <p>At current prices, Standard Kit has an ABC margin of ${fmtPercent(standardAbc.margin)} and Custom Kit has an ABC margin of ${fmtPercent(customAbc.margin)}. The pricing round turns those unit economics into a projected profit of ${fmtMoney(projectedProfit())}.</p>
-  `;
 }
 
 function loadLeaderboard() {
@@ -437,13 +525,12 @@ function saveScore() {
   const entries = loadLeaderboard().filter((entry) => entry.name !== state.student);
   entries.push({
     name: state.student,
-    score: labScore(),
-    profit: projectedProfit(),
-    diagnosis: state.diagnosis === undercostedProduct()
+    score: state.score,
+    completed: state.completed.size,
+    date: new Date().toISOString()
   });
-  entries.sort((a, b) => b.score - a.score || b.profit - a.profit);
+  entries.sort((a, b) => b.score - a.score);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, 12)));
-  state.scoreSaved = true;
 }
 
 function renderLeaderboard() {
@@ -460,10 +547,13 @@ function renderLeaderboard() {
         <span class="rank">${index + 1}</span>
         <strong>${entry.name}${you ? " (you)" : ""}</strong>
         <strong>${entry.score} pts</strong>
-        <span>${fmtMoney(entry.profit)} profit</span>
+        <span>${entry.completed}/5 levels</span>
       </div>
     `;
   }).join("");
 }
+
+window.answerChoice = answerChoice;
+window.answerMatch = answerMatch;
 
 renderAll();
