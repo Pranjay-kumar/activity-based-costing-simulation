@@ -103,7 +103,7 @@ const levels = [
     correct: "raise",
     choices: [
       { id: "discount", label: "Discount Custom Kit to $75", note: "That price is far below the ABC unit cost of $93.75." },
-      { id: "hold", label: "Keep price at $89", note: "This stays profitable, but it ignores how thin the ABC margin is." },
+      { id: "hold", label: "Keep price at $89", note: "This still loses money under ABC because full cost is $93.75." },
       { id: "raise", label: "Raise or redesign Custom Kit", note: "Correct. Either price for complexity or reduce the activities it consumes." }
     ],
     lesson: "ABC shows Custom Kit is already below full cost at $89. A discount would deepen the loss."
@@ -293,6 +293,7 @@ function answerMatch(activity, driver) {
     state.answers[`${level.id}-earned`] = earned;
     state.showLesson = true;
   } else {
+    state.answers[`${level.id}-partial`] = driver === correctDriver ? "correct" : "incorrect";
     state.showLesson = true;
   }
   renderAll();
@@ -316,6 +317,8 @@ function prevLevel() {
 
 function renderAll() {
   document.getElementById("start-overhead").textContent = fmtMoney(totalOverhead());
+  saveScoreButton.disabled = state.completed.size < levels.length;
+  saveScoreButton.textContent = state.completed.size < levels.length ? "Finish to save" : "Save score";
   renderHud();
   renderLevelNav();
   renderChallenge();
@@ -425,7 +428,7 @@ function renderFeedback(level) {
   const panel = document.getElementById("feedback-panel");
   const complete = isLevelComplete(level);
   const attempts = levelAttempts(level);
-  if (!state.showLesson && attempts === 0) {
+  if (!state.showLesson && attempts === 0 && !state.answers[`${level.id}-partial`]) {
     panel.className = "feedback-panel";
     panel.innerHTML = `
       <p class="eyebrow">How to think</p>
@@ -438,16 +441,28 @@ function renderFeedback(level) {
   const selected = state.answers[level.id];
   let correct = complete;
   let note = level.lesson;
+  let eyebrow = correct ? "Correct" : "Try again";
+  let headline = correct ? `You earned ${state.answers[`${level.id}-earned`] || 0} points.` : "That answer does not fit the cost story yet.";
+  let panelTone = correct ? "correct" : "incorrect";
   if (level.type === "choice" && selected) {
     const choice = level.choices.find((item) => item.id === selected);
     correct = selected === level.correct;
     note = choice.note;
   }
+  if (level.type === "match" && !complete) {
+    const partial = state.answers[`${level.id}-partial`];
+    if (partial === "correct") {
+      eyebrow = "Good match";
+      headline = "Keep going. That driver fits the activity.";
+      note = "Match the remaining activity pools. The level completes when all four drivers are right.";
+      panelTone = "correct";
+    }
+  }
 
-  panel.className = `feedback-panel ${correct ? "correct" : "incorrect"}`;
+  panel.className = `feedback-panel ${panelTone}`;
   panel.innerHTML = `
-    <p class="eyebrow">${correct ? "Correct" : "Try again"}</p>
-    <h3>${correct ? `You earned ${state.answers[`${level.id}-earned`] || 0} points.` : "That answer does not fit the cost story yet."}</h3>
+    <p class="eyebrow">${eyebrow}</p>
+    <h3>${headline}</h3>
     <p>${note}</p>
     ${correct && note !== level.lesson ? `<p class="lesson-line">${level.lesson}</p>` : ""}
   `;
@@ -506,7 +521,7 @@ function renderCostCards() {
         <dl>
           <div><dt>Plantwide unit cost</dt><dd>${fmtMoney(traditional.unitCost, 2)}</dd></div>
           <div><dt>ABC unit cost</dt><dd>${reveal ? fmtMoney(abc.unitCost, 2) : "Locked"}</dd></div>
-          <div><dt>Distortion</dt><dd class="${distortion > 0 ? "negative" : "positive"}">${reveal ? fmtMoney(Math.abs(distortion), 2) : "Locked"}</dd></div>
+          <div><dt>Distortion</dt><dd class="${distortion > 0 ? "positive" : "negative"}">${reveal ? fmtMoney(Math.abs(distortion), 2) : "Locked"}</dd></div>
         </dl>
       </article>
     `;
@@ -522,6 +537,9 @@ function loadLeaderboard() {
 }
 
 function saveScore() {
+  if (state.completed.size < levels.length) {
+    return;
+  }
   const entries = loadLeaderboard().filter((entry) => entry.name !== state.student);
   entries.push({
     name: state.student,
@@ -537,7 +555,10 @@ function renderLeaderboard() {
   const list = document.getElementById("leaderboard-list");
   const entries = loadLeaderboard();
   if (entries.length === 0) {
-    list.innerHTML = `<div class="empty-state">No saved scores yet.</div>`;
+    const message = state.completed.size < levels.length
+      ? "Finish all five levels to save a final score."
+      : `Ready to save ${state.score.toLocaleString()} points.`;
+    list.innerHTML = `<div class="empty-state">${message}</div>`;
     return;
   }
   list.innerHTML = entries.map((entry, index) => {
