@@ -35,11 +35,17 @@ const levels = [
     label: "Level 1",
     title: "Plantwide Shortcut",
     short: "Plantwide",
-    coach: "A plantwide rate spreads one big overhead bucket using one volume measure. It is fast, but it can hide complexity.",
-    prompt: "The controller starts with direct labor hours. What is the plantwide overhead rate?",
+    coach: "A plantwide rate spreads one big overhead bucket using one volume measure. First find the rate, then we can ask whether that shortcut is fair.",
+    prompt: "Use the formula overhead rate = total overhead / total direct labor hours. What is the plantwide overhead rate?",
     type: "choice",
     reward: 120,
     correct: "33.60",
+    facts: [
+      { label: "Total overhead", value: "$252,000" },
+      { label: "Standard Kit DLH", value: "4,800" },
+      { label: "Custom Kit DLH", value: "2,700" },
+      { label: "Total DLH", value: "7,500" }
+    ],
     choices: [
       { id: "16.80", label: "$16.80 per DLH", note: "That would only allocate half of the overhead." },
       { id: "33.60", label: "$33.60 per DLH", note: "$252,000 overhead divided by 7,500 direct labor hours." },
@@ -380,6 +386,7 @@ function renderChoiceLevel(level) {
   const selected = state.answers[level.id];
   const complete = isLevelComplete(level);
   return `
+    ${renderFacts(level)}
     <div class="answer-grid">
       ${level.choices.map((choice) => {
         const picked = selected === choice.id;
@@ -392,6 +399,22 @@ function renderChoiceLevel(level) {
           </button>
         `;
       }).join("")}
+    </div>
+  `;
+}
+
+function renderFacts(level) {
+  if (!level.facts) {
+    return "";
+  }
+  return `
+    <div class="clue-grid" aria-label="Case clues">
+      ${level.facts.map((fact) => `
+        <div class="clue-card">
+          <span>${fact.label}</span>
+          <strong>${fact.value}</strong>
+        </div>
+      `).join("")}
     </div>
   `;
 }
