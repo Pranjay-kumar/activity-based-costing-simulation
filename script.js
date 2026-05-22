@@ -63,6 +63,14 @@ const levels = [
     type: "choice",
     reward: 140,
     correct: "custom",
+    facts: [
+      { label: "Standard units", value: "12,000" },
+      { label: "Custom units", value: "3,000" },
+      { label: "Custom share of units", value: "20%" },
+      { label: "Custom share of setups", value: "80%" },
+      { label: "Custom share of moves", value: "78%" },
+      { label: "Custom share of inspections", value: "80%" }
+    ],
     choices: [
       { id: "standard", label: "Standard Kit", note: "Standard is high volume and uses fewer batch activities per unit." },
       { id: "custom", label: "Custom Kit", note: "Custom is lower volume but uses many more setups, moves, and inspections." }
@@ -78,6 +86,12 @@ const levels = [
     prompt: "Match each activity pool to the driver that best explains its cost.",
     type: "match",
     reward: 180,
+    facts: [
+      { label: "Machine processing", value: "Caused by machine time" },
+      { label: "Production setups", value: "Caused by setup runs" },
+      { label: "Material handling", value: "Caused by moving materials" },
+      { label: "Quality inspections", value: "Caused by inspection work" }
+    ],
     lesson: "A good driver is the thing that causes the activity cost. Setups are driven by setup runs, not units produced."
   },
   {
@@ -90,10 +104,18 @@ const levels = [
     type: "choice",
     reward: 180,
     correct: "51.75",
+    facts: [
+      { label: "Machine OH", value: "$20.74 x 1,050 = $21,778" },
+      { label: "Setup OH", value: "$800 x 72 = $57,600" },
+      { label: "Move OH", value: "$233.33 x 140 = $32,667" },
+      { label: "Inspection OH", value: "$450 x 96 = $43,200" },
+      { label: "Custom total OH", value: "$155,244" },
+      { label: "Custom units", value: "3,000" }
+    ],
     choices: [
       { id: "8.06", label: "$8.06", note: "That is Standard Kit's ABC overhead per unit." },
       { id: "30.24", label: "$30.24", note: "That is Custom Kit's plantwide overhead, before ABC traces batch work." },
-      { id: "51.75", label: "$51.75", note: "$155,250 of activity overhead divided by 3,000 Custom Kits." }
+      { id: "51.75", label: "$51.75", note: "About $155,244 of activity overhead divided by 3,000 Custom Kits." }
     ],
     lesson: "Custom Kit's ABC unit cost is $93.75: $42 direct cost plus $51.75 overhead."
   },
@@ -107,6 +129,14 @@ const levels = [
     type: "choice",
     reward: 220,
     correct: "raise",
+    facts: [
+      { label: "Current price", value: "$89.00" },
+      { label: "Direct cost", value: "$42.00" },
+      { label: "ABC overhead", value: "$51.75" },
+      { label: "ABC unit cost", value: "$93.75" },
+      { label: "Current unit profit", value: "-$4.75" },
+      { label: "Discount proposal", value: "$75.00" }
+    ],
     choices: [
       { id: "discount", label: "Discount Custom Kit to $75", note: "That price is far below the ABC unit cost of $93.75." },
       { id: "hold", label: "Keep price at $89", note: "This still loses money under ABC because full cost is $93.75." },
@@ -422,6 +452,7 @@ function renderFacts(level) {
 function renderMatchLevel(level) {
   const complete = isLevelComplete(level);
   return `
+    ${renderFacts(level)}
     <div class="match-board">
       ${driverMatches.map((match) => {
         const selected = state.matchAnswers[match.activity];
