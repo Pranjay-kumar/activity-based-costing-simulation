@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Activity Cost Lab — Unit Tests</title>
+  <style>
+    body { font-family: monospace; margin: 32px; background: #f5f7fb; color: #17202a; }
+    h1   { font-size: 22px; margin-bottom: 4px; }
+    p.sub { color: #647386; margin: 0 0 24px; }
+    .summary { font-size: 16px; font-weight: 700; margin: 24px 0 16px; }
+    .pass { color: #16816d; }
+    .fail { color: #b94b4b; }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+    li { padding: 10px 14px; border-radius: 6px; font-size: 13px; }
+    li.pass { background: #dff3ee; }
+    li.fail { background: #fae6e4; }
+    li .label { font-weight: 700; }
+    li .detail { color: #647386; margin-top: 4px; }
+    li.fail .detail { color: #b94b4b; }
+  </style>
+</head>
+<body>
+  <h1>Activity Cost Lab — Unit Tests</h1>
+  <p class="sub">Open in a browser. No build step required.</p>
+  <div class="summary" id="summary"></div>
+  <ul id="results"></ul>
+
+  <script src="math.js"></script>
+  <script>
+    // ─── Minimal test runner ──────────────────────────────────────────────────
+
+    const results = [];
+
+    function near(a, b, tol = 0.01) {
+      return Math.abs(Number(a) - Number(b)) <= tol;
+    }
+
+    function expect(label, actual, expected, tol) {
+      const ok = tol !== undefined ? near(actual, expected, tol) : actual === expected;
+      results.push({ label, ok, actual, expected });
+    }
+
+    // ─── Tests: totalOverhead ─────────────────────────────────────────────────
+
+    expect(
+      "totalOverhead() sums all four activity pools",
+      totalOverhead(), 252000
+    );
+
+    // ─── Tests: plantwideRate ─────────────────────────────────────────────────
+
+    expect(
+      "plantwideRate() = $252,000 / 7,500 DLH = $33.60",
+      plantwideRate(), 33.6, 0.001
+    );
+
+    // ─── Tests: activityRate ──────────────────────────────────────────────────
+
+    const machineAct = caseData.activities.find(a => a.id === "machine");
+    const setupsAct  = caseData.activities.find(a => a.id === "setups");
+    const movesAct   = caseData.activities.find(a => a.id === "moves");
+    const inspectAct = caseData.activities.find(a => a.id === "inspection");
+
+    expect(
+      "activityRate(machine) = $84,000 / 4,050 mh = $20.74",
+      activityRate(machineAct), 20.7407, 0.001
+    );
+    expect(
+      "activityRate(setups) = $72,000 / 90 runs = $800",
+      activityRate(setupsAct), 800, 0.001
+    );
+    expect(
+      "activityRate(moves) = $42,000 / 180 moves = $233.33",
+      activityRate(movesAct), 233.333, 0.01
+    );
+    expect(
+      "activityRate(inspections) = $54,000 / 120 = $450",
+      activityRate(inspectAct), 450, 0.001
+    );
+
+    // ─── Tests: traditionalFor ────────────────────────────────────────────────
+
+    const tStd = traditionalFor("standard");
+    const tCus = traditionalFor("custom");
+
+    expect(
+      "traditionalFor(standard).overheadPerUnit = $33.60 × (4800/12000) = $13.44",
+      tStd.overheadPerUnit, 13.44, 0.01
+    );
+    expect(
+      "traditionalFor(standard).unitCost = $22 direct + $13.44 OH = $35.44",
+      tStd.unitCost, 35.44, 0.01
+    );
+    expect(
+      "traditionalFor(standard).unitProfit = $48 − $35.44 = $12.56",
+      tStd.unitProfit, 12.56, 0.01
+    );
+
+    expect(
+      "traditionalFor(custom).overheadPerUnit = $33.60 × (2700/3000) = $30.24",
+      tCus.overheadPerUnit, 30.24, 0.01
+    );
+    expect(
+      "traditionalFor(custom).unitCost = $42 direct + $30.24 OH = $72.24",
+      tCus.unitCost, 72.24, 0.01
+    );
+    expect(
+      "traditionalFor(custom).unitProfit = $89 − $72.24 = $16.76",
+      tCus.unitProfit, 16.76, 0.01
+    );
+
+    // ─── Tests: abcFor ────────────────────────────────────────────────────────
+
+    const aStd = abcFor("standard");
+    const aCus = abcFor("custom");
+
+    expect(
+      "abcFor(standard).overheadPerUnit ≈ $8.06 (game answer choice)",
+      aStd.overheadPerUnit, 8.063, 0.01
+    );
+    expect(
+      "abcFor(standard).unitCost = $22 direct + $8.06 OH ≈ $30.06",
+      aStd.unitCost, 30.063, 0.01
+    );
+    expect(
+      "abcFor(standard).unitProfit = $48 − $30.06 ≈ $17.94",
+      aStd.unitProfit, 17.937, 0.01
+    );
+
+    expect(
+      "abcFor(custom).overheadPerUnit ≈ $51.75 (game answer choice)",
+      aCus.overheadPerUnit, 51.748, 0.01
+    );
+    expect(
+      "abcFor(custom).unitCost = $42 direct + $51.75 OH ≈ $93.75",
+      aCus.unitCost, 93.748, 0.01
+    );
+    expect(
+      "abcFor(custom).unitProfit = $89 − $93.75 ≈ −$4.75 (loss)",
+      aCus.unitProfit, -4.748, 0.01
+    );
+    expect(
+      "abcFor(custom).margin is negative (loss-making product)",
+      aCus.margin < 0, true
+    );
+
+    // ─── Tests: cost distortion direction ────────────────────────────────────
+
+    expect(
+      "Standard Kit is overcosted under plantwide (traditional OH > ABC OH)",
+      tStd.overheadPerUnit > aStd.overheadPerUnit, true
+    );
+    expect(
+      "Custom Kit is undercosted under plantwide (traditional OH < ABC OH)",
+      tCus.overheadPerUnit < aCus.overheadPerUnit, true
+    );
+
+    // ─── Tests: total overhead is fully allocated under ABC ───────────────────
+
+    const abcTotalAllocated = abcFor("standard").allocated + abcFor("custom").allocated;
+    expect(
+      "ABC allocates 100% of total overhead across both products",
+      abcTotalAllocated, totalOverhead(), 0.01
+    );
+
+    // ─── Tests: fmtMoney ─────────────────────────────────────────────────────
+
+    expect("fmtMoney(252000) = '$252,000'",    fmtMoney(252000),    "$252,000");
+    expect("fmtMoney(33.6, 2) = '$33.60'",     fmtMoney(33.6, 2),   "$33.60");
+    expect("fmtMoney(-4.75, 2) = '-$4.75'",    fmtMoney(-4.75, 2),  "-$4.75");
+    expect("fmtMoney(0) = '$0'",               fmtMoney(0),         "$0");
+
+    // ─── Tests: fmtPercent ───────────────────────────────────────────────────
+
+    expect("fmtPercent(0.5) = '50.0%'",    fmtPercent(0.5),  "50.0%");
+    expect("fmtPercent(-0.053) = '-5.3%'", fmtPercent(-0.053), "-5.3%");
+
+    // ─── Tests: driver data integrity ────────────────────────────────────────
+
+    expect(
+      "driverMatches has one entry per activity",
+      driverMatches.length, caseData.activities.length
+    );
+    expect(
+      "Every driverMatch.driver differs from driverMatch.wrong",
+      driverMatches.every(m => m.driver !== m.wrong), true
+    );
+
+    // ─── Render results ───────────────────────────────────────────────────────
+
+    const passed = results.filter(r => r.ok).length;
+    const failed = results.filter(r => !r.ok).length;
+
+    document.getElementById("summary").innerHTML =
+      `<span class="${failed === 0 ? "pass" : "fail"}">${passed} passed</span>` +
+      (failed > 0 ? ` / <span class="fail">${failed} failed</span>` : "") +
+      ` of ${results.length} tests`;
+
+    const list = document.getElementById("results");
+    results.forEach(r => {
+      const li = document.createElement("li");
+      li.className = r.ok ? "pass" : "fail";
+      li.innerHTML = `
+        <div class="label">${r.ok ? "✓" : "✗"} ${r.label}</div>
+        ${!r.ok ? `<div class="detail">got: ${JSON.stringify(r.actual)} — expected: ${JSON.stringify(r.expected)}</div>` : ""}
+      `;
+      list.appendChild(li);
+    });
+  </script>
+</body>
+</html>

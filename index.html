@@ -33,7 +33,7 @@
         <form class="start-form" id="start-form">
           <label for="student-name">Student or team name</label>
           <div class="start-row">
-            <input id="student-name" type="text" maxlength="28" placeholder="Enter name" autocomplete="off">
+            <input id="student-name" type="text" maxlength="28" placeholder="Enter name" autocomplete="off" required minlength="1">
             <button class="primary-button" type="submit">Start game</button>
           </div>
         </form>
@@ -86,6 +86,11 @@
         </div>
         <div class="progress-shell" aria-label="Game progress"><span id="progress-fill"></span></div>
         <nav class="level-track" id="level-track" aria-label="Game levels"></nav>
+
+        <details class="case-file" id="case-file">
+          <summary class="case-file-summary">Case file</summary>
+          <div class="case-file-body" id="case-file-body"></div>
+        </details>
       </aside>
 
       <section class="workspace">
@@ -132,6 +137,7 @@
     </section>
   </main>
 
+  <script src="math.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
